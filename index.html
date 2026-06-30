@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover, user-scalable=no" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="공익교대" />
+<meta name="theme-color" content="#0d0e10" />
+<meta name="format-detection" content="telephone=no" />
+<link rel="icon" type="image/png" href="icon.png" />
+<link rel="apple-touch-icon" href="icon.png" />
+<title>공익교대 — 지하철공익 월급계산기 v0.7</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.24.7/babel.min.js"></script>
+<style>
+  :root{--bg:#0d0e10;--card:#1a1c1f;--card2:#232629;--line:#2c2f33;--txt:#f2f3f5;--sub:#9aa0a6;--dim:#6b7177;--blue:#3d8bff;
+    --day:#3d8bff;--night:#8b6cff;--off:#6b7177;--rest:#3ecf8e;--leave:#23c4c4;--half:#46c4ff;--sick:#ff8a3d;--train:#7f8c2e;--holiday:#ff5b5b;}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--txt);font-family:'Pretendard','Pretendard Variable',-apple-system,sans-serif;}
+  #root{max-width:440px;margin:0 auto;min-height:100vh;background:var(--bg);position:relative;}
+  .screen{padding:20px 18px 100px;}
+  h1.title{font-size:30px;font-weight:800;margin:8px 2px 18px;letter-spacing:-.5px;}
+  .topbar{display:flex;align-items:center;gap:6px;margin:6px 0 18px;}
+  .topbar .back{font-size:24px;cursor:pointer;padding:2px 8px 2px 0;color:var(--txt);}
+  .topbar h2{font-size:22px;font-weight:800;margin:0;}
+  .card{background:var(--card);border-radius:18px;padding:18px;margin-bottom:16px;}
+  .row{display:flex;align-items:center;gap:10px;} .muted{color:var(--sub);} .dim{color:var(--dim);}
+  .btn{background:var(--blue);color:#fff;border:none;border-radius:12px;padding:14px;font-size:16px;font-weight:700;width:100%;font-family:inherit;cursor:pointer;}
+  .btn:active{opacity:.85;} .btn-ghost{background:var(--card2);color:var(--txt);} .btn-sm{padding:10px;font-size:14px;}
+  .seg{display:flex;background:var(--card2);border-radius:12px;padding:4px;gap:4px;}
+  .seg button{flex:1;border:none;background:transparent;color:var(--sub);padding:9px;border-radius:9px;font-weight:600;font-size:13px;font-family:inherit;cursor:pointer;}
+  .seg button.on{background:var(--blue);color:#fff;}
+  input,select,textarea{font-family:inherit;background:var(--card2);border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:11px 12px;font-size:15px;width:100%;}
+  input:focus,select:focus{outline:none;border-color:var(--blue);}
+  label.fld{display:block;margin-bottom:14px;} label.fld .lab{font-size:13px;color:var(--sub);margin-bottom:6px;display:block;font-weight:600;}
+  .sec-lab{font-size:13px;color:var(--sub);font-weight:700;margin-bottom:12px;}
+  .menu-item{display:flex;align-items:center;gap:13px;padding:16px 14px;background:var(--card);border-radius:16px;margin-bottom:11px;cursor:pointer;}
+  .menu-item:active{background:var(--card2);}
+  .menu-ic{width:40px;height:40px;border-radius:12px;background:var(--card2);display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0;}
+  .menu-item .chev{color:var(--dim);font-size:20px;}
+  .tabbar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:440px;background:#141517;border-top:1px solid var(--line);display:flex;padding:9px 0 14px;z-index:50;}
+  .tabbar button{flex:1;background:none;border:none;color:var(--dim);font-family:inherit;font-size:11px;font-weight:600;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;}
+  .tabbar button.on{color:var(--blue);} .tabbar .ico{font-size:20px;line-height:1;}
+  .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:100;display:flex;align-items:flex-end;justify-content:center;}
+  .modal{background:var(--card);width:100%;max-width:440px;border-radius:22px 22px 0 0;padding:8px 18px 28px;max-height:90vh;overflow-y:auto;}
+  .modal .grip{width:42px;height:5px;background:#3a3d42;border-radius:3px;margin:8px auto 14px;}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
+  .cal-dow{text-align:center;font-size:12px;color:var(--sub);padding:6px 0;font-weight:600;}
+  .cal-cell{aspect-ratio:1/1.22;border-radius:10px;background:var(--card2);padding:5px 3px;display:flex;flex-direction:column;align-items:center;cursor:pointer;border:1.5px solid transparent;position:relative;overflow:hidden;}
+  .cal-cell.out{opacity:.25;cursor:default;} .cal-cell.sel{border-color:var(--blue);}
+  .cal-num{font-size:13px;font-weight:700;} .cal-num.hol{color:var(--holiday);}
+  .cal-memo{position:absolute;top:3px;right:4px;font-size:8px;}
+  .cal-tag{font-size:9px;font-weight:800;margin-top:1px;border-radius:5px;padding:1px 3px;line-height:1.3;}
+  .cal-amt{font-size:8px;color:var(--rest);margin-top:auto;font-weight:600;}
+  .legend{display:flex;flex-wrap:wrap;gap:7px 11px;font-size:11.5px;color:var(--sub);margin-top:12px;}
+  .legend span{display:flex;align-items:center;gap:5px;} .dot{width:9px;height:9px;border-radius:3px;display:inline-block;}
+  .brk{display:flex;justify-content:space-between;padding:13px 2px;border-bottom:1px solid var(--line);}
+  .brk:last-child{border-bottom:none;} .brk .l{font-weight:700;} .brk .s{font-size:12.5px;color:var(--sub);margin-top:3px;} .brk .v{font-weight:800;font-size:17px;text-align:right;white-space:nowrap;}
+  .progress{height:8px;background:var(--card2);border-radius:4px;overflow:hidden;margin:14px 0 8px;}
+  .progress > div{height:100%;background:linear-gradient(90deg,#3d8bff,#5fa0ff);border-radius:4px;transition:width .1s linear;}
+  .stat3{display:flex;background:var(--card2);border-radius:14px;overflow:hidden;margin-top:6px;}
+  .stat3 > div{flex:1;text-align:center;padding:14px 4px;} .stat3 > div + div{border-left:1px solid var(--line);}
+  .stat3 .k{font-size:12px;color:var(--sub);} .stat3 .n{font-size:20px;font-weight:800;margin-top:5px;}
+  .leave-item{display:flex;align-items:center;gap:13px;padding:13px 2px;cursor:pointer;border-radius:12px;} .leave-item:active{background:var(--card2);}
+  .leave-ic{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;font-weight:800;}
+  .opt{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;}
+  .opt button{padding:10px 3px;border:1.5px solid var(--line);background:var(--card2);color:var(--sub);border-radius:11px;font-family:inherit;font-weight:700;font-size:12.5px;cursor:pointer;}
+  .cyc-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;}
+  .cyc-cell{aspect-ratio:1;border-radius:9px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:11px;font-weight:800;cursor:pointer;border:1.5px solid var(--line);}
+  .note{font-size:12.5px;color:var(--dim);line-height:1.65;}
+  .switch{width:46px;height:27px;border-radius:14px;background:var(--card2);position:relative;cursor:pointer;transition:.2s;flex-shrink:0;}
+  .switch.on{background:var(--blue);} .switch i{position:absolute;top:3px;left:3px;width:21px;height:21px;border-radius:50%;background:#fff;transition:.2s;} .switch.on i{left:22px;}
+  .used-row{display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--line);}
+  .used-row .x{color:var(--sick);font-weight:800;cursor:pointer;font-size:18px;padding:0 4px;}
+  .tag2{font-size:10px;font-weight:800;border-radius:6px;padding:2px 6px;}
+  .round-row{display:flex;align-items:center;gap:8px;padding:7px 0;}
+  .round-row .rl{font-size:13px;color:var(--sub);width:64px;flex-shrink:0;}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const {useState,useEffect,useRef} = React;
+
+const SALARY={2025:{이병:750000,일병:900000,상병:1200000,병장:1500000},2026:{이병:750000,일병:900000,상병:1200000,병장:1500000}};
+const salaryFor=(y,r)=>(SALARY[y]||SALARY[2026])[r];
+const DAY_TYPES=['주간','야간','비번','휴무'];
+const PRESETS={'3교대':['주간','주간','주간','주간','주간','주간','주간','야간','비번','야간','비번','야간','비번','야간','비번','야간','비번','야간','비번','야간','비번'],'주야비휴':['주간','야간','비번','휴무'],'통상':['휴무','주간','주간','주간','주간','주간','휴무']};
+const SICK_PAY_LIMIT=30; // 누적 30일 초과 병가는 봉급 미지급
+function contrib(s,n){switch(s){case '주간':case '야간':return{m:1,t:1};case '비번':return n?{m:1,t:1}:{m:0,t:0};case '오전반가':return{m:0,t:1};case '오후반가':return{m:1,t:1};default:return{m:0,t:0};}}
+const BASE_COLOR={주간:'var(--day)',야간:'var(--night)',비번:'var(--off)',휴무:'var(--rest)',연가:'var(--leave)',오전반가:'var(--half)',오후반가:'var(--half)',병가:'var(--sick)',훈련:'var(--train)',보은연수:'#9aa0a6'};
+const CUSTOM_PALETTE=['#ffd24d','#ff9fb0','#c79bff','#7fd1a0','#ffa94d','#74c0fc','#ff8787'];
+function colorOf(st8,st){if(BASE_COLOR[st])return BASE_COLOR[st];const i=st8.profile.customLeaves.findIndex(c=>c.name===st);if(i>=0)return CUSTOM_PALETTE[i%CUSTOM_PALETTE.length];return 'var(--dim)';}
+const WORK=['주간','야간','비번','휴무','훈련','보은연수'];
+const HOLIDAYS={'2025-10-03':'개천절','2025-10-05':'추석연휴','2025-10-06':'추석','2025-10-07':'추석연휴','2025-10-08':'대체공휴일','2025-10-09':'한글날','2025-12-25':'성탄절','2026-01-01':'신정','2026-02-16':'설날연휴','2026-02-17':'설날','2026-02-18':'설날연휴','2026-03-01':'삼일절','2026-03-02':'대체공휴일(삼일절)','2026-05-01':'근로자의날','2026-05-05':'어린이날','2026-05-24':'부처님오신날','2026-05-25':'대체공휴일','2026-06-03':'지방선거','2026-06-06':'현충일','2026-07-17':'제헌절','2026-08-15':'광복절','2026-08-17':'대체공휴일(광복절)','2026-09-24':'추석연휴','2026-09-25':'추석','2026-09-26':'추석연휴','2026-09-28':'대체공휴일(추석)','2026-10-03':'개천절','2026-10-05':'대체공휴일(개천절)','2026-10-09':'한글날','2026-12-25':'성탄절','2027-01-01':'신정','2027-03-01':'삼일절','2027-05-01':'근로자의날','2027-05-05':'어린이날','2027-06-06':'현충일'};
+
+const pad=n=>String(n).padStart(2,'0');
+const ymd=(y,m,d)=>`${y}-${pad(m)}-${pad(d)}`;
+const parse=s=>{const[y,m,d]=s.split('-').map(Number);return{y,m,d};};
+const epoch=s=>{const{y,m,d}=parse(s);return Math.floor(Date.UTC(y,m-1,d)/864e5);};
+const diffDays=(a,b)=>epoch(b)-epoch(a);
+const addDays=(s,n)=>{const d=new Date(epoch(s)*864e5+n*864e5);return ymd(d.getUTCFullYear(),d.getUTCMonth()+1,d.getUTCDate());};
+const daysInMonth=(y,m)=>new Date(y,m,0).getDate();
+const dow=(y,m,d)=>new Date(y,m-1,d).getDay();
+const todayStr=()=>{const t=new Date();return ymd(t.getFullYear(),t.getMonth()+1,t.getDate());};
+const won=n=>Math.round(n).toLocaleString('ko-KR');
+const inRange=(ds,a,b)=>a&&b&&epoch(ds)>=epoch(a)&&epoch(ds)<=epoch(b);
+const monthsBetween=(a,b)=>{const A=parse(a),B=parse(b);return (B.y-A.y)*12+(B.m-A.m)+1;};
+
+function rankInfo(enlist,year,month){const e=parse(enlist);const sm=(year-e.y)*12+(month-e.m)+1;if(sm<1)return null;let rank,hobong;if(sm<=2){rank='이병';hobong=sm;}else if(sm<=8){rank='일병';hobong=sm-2;}else if(sm<=14){rank='상병';hobong=sm-8;}else{rank='병장';hobong=sm-14;}return{rank,hobong,serviceMonth:sm,salary:salaryFor(year,rank)};}
+function cycleStatus(r,ds){const len=r.cycle.length;if(!len)return null;const i=((diffDays(r.anchor,ds)%len)+len)%len;return r.cycle[i];}
+function dayStatus(state,ds){if(state.overrides[ds])return state.overrides[ds];const p=state.profile;if(epoch(ds)<epoch(p.enlist)||epoch(ds)>epoch(p.discharge))return null;if(inRange(ds,p.trainStart,p.trainEnd))return '훈련';if(inRange(ds,p.boeunStart,p.boeunEnd))return '보은연수';return cycleStatus(state.routine,ds);}
+
+// 초과병가(누적 30일 초과) 날짜 집합
+function excessSick(state){const ds=Object.keys(state.overrides).filter(d=>state.overrides[d]==='병가').sort((a,b)=>epoch(a)-epoch(b));const set=new Set();ds.forEach((d,i)=>{if(i>=SICK_PAY_LIMIT)set.add(d);});return set;}
+
+// 급여기간(payStartDay) 계산
+function payPeriod(payStartDay,anchor){const {y,m,d}=parse(anchor);let sy=y,sm=m;if(payStartDay>1&&d<payStartDay){sm=m-1;if(sm<1){sm=12;sy--;}}const sd=Math.min(payStartDay,daysInMonth(sy,sm));const start=ymd(sy,sm,sd);let nm=sm+1,ny=sy;if(nm>12){nm=1;ny++;}const end=addDays(ymd(ny,nm,Math.min(payStartDay,daysInMonth(ny,nm))),-1);return {start,end};}
+
+// 기간 급여 계산 (일별 합산: 계급변경·월경계·초과병가 모두 반영)
+function calcPeriod(state,start,end){
+  const p=state.profile,exc=excessSick(state);let base=0,meal=0,transit=0,inSvc=0,mealDays=0,transitDays=0,excDays=0;const days=[];
+  for(let cur=start;epoch(cur)<=epoch(end);cur=addDays(cur,1)){
+    const {y,m}=parse(cur);const svc=epoch(cur)>=epoch(p.enlist)&&epoch(cur)<=epoch(p.discharge);
+    const ri=rankInfo(p.enlist,y,m),dim=daysInMonth(y,m),st=dayStatus(state,cur),c=st?contrib(st,state.routine.nightAs2):{m:0,t:0};
+    const isExc=st==='병가'&&exc.has(cur);let db=0;
+    if(svc&&ri&&!isExc)db=ri.salary/dim;
+    if(svc)inSvc++; if(isExc)excDays++;
+    const mealRate=y<=2025?p.mealCost2025:p.mealCost;
+    base+=db; meal+=c.m*mealRate; transit+=c.t*p.transitCost; mealDays+=c.m; transitDays+=c.t;
+    days.push({ds:cur,d:parse(cur).d,y,m,st,c,svc,daily:db+c.m*mealRate+c.t*p.transitCost,baseDaily:svc&&ri?ri.salary/dim:0});
+  }
+  base=Math.round(base);
+  return {start,end,base,meal:Math.round(meal),transit:Math.round(transit),inSvc,mealDays,transitDays,excDays,total:Math.round(base+meal+transit),days};
+}
+
+function tally(state){const e=parse(state.profile.enlist);const y1End=ymd(e.y+1,e.m,e.d);let l1=0,l2=0,sick=0;const custom={};state.profile.customLeaves.forEach(c=>custom[c.name]=0);for(const[ds,st] of Object.entries(state.overrides)){const half=(st==='오전반가'||st==='오후반가');if(st==='연가'||half){const v=half?0.5:1;if(epoch(ds)<epoch(y1End))l1+=v;else l2+=v;}else if(st==='병가')sick++;else if(custom[st]!==undefined)custom[st]++;}return{l1,l2,sick,custom};}
+// 복무기간 = 1년 9개월(21개월). 소집해제일 = 소집일 + 21개월 - 1일
+function addMonths(s,n){const{y,m,d}=parse(s);let nm=m+n,ny=y+Math.floor((nm-1)/12);nm=((nm-1)%12)+1;return ymd(ny,nm,Math.min(d,daysInMonth(ny,nm)));}
+const computeDischarge=enlist=>addDays(addMonths(enlist,21),-1);
+const monthWeekends=(y,m)=>{let c=0;for(let d=1;d<=daysInMonth(y,m);d++){const w=dow(y,m,d);if(w===0||w===6)c++;}return c;};
+const monthHolidays=(y,m)=>{let c=0;for(let d=1;d<=daysInMonth(y,m);d++){const w=dow(y,m,d);if(HOLIDAYS[ymd(y,m,d)]&&w!==0&&w!==6)c++;}return c;};
+const monthRestUsed=(state,y,m)=>{let c=0;for(let d=1;d<=daysInMonth(y,m);d++)if(state.overrides[ymd(y,m,d)]==='휴무')c++;return c;};
+// 휴가 한도 검증: ds를 st로 바꿀 때 한도 초과 여부
+function validatePlace(state,ds,st){const p=state.profile;const tmp={...state.overrides};delete tmp[ds];const lv=tally({...state,overrides:tmp});const e=parse(p.enlist),y1End=ymd(e.y+1,e.m,e.d),isY1=epoch(ds)<epoch(y1End);
+  if(st==='연가'||st==='오전반가'||st==='오후반가'){const add=st==='연가'?1:0.5;if(isY1){if(lv.l1+add>p.leave1)return{ok:false,msg:'더 이상 쓸 1년차 연가가 없습니다'};}else{if(lv.l2+add>p.leave2)return{ok:false,msg:'더 이상 쓸 2년차 연가가 없습니다'};}}
+  else if(st==='병가'){if(lv.sick+1>p.sick)return{ok:false,msg:'더 이상 쓸 병가가 없습니다'};}
+  else{const cl=p.customLeaves.find(c=>c.name===st);if(cl){if(cl.days<=0)return{ok:false,msg:`받은 ${st}가 없습니다. 만약 받았다면, 설정 탭에 입력해주세요`};if((lv.custom[st]||0)+1>cl.days)return{ok:false,msg:`더 이상 쓸 ${st}가 없습니다`};}}
+  return{ok:true};}
+
+// 군적금
+function computeSavings(sv){const amts=sv.roundAmounts||[];const N=amts.length;const principal=amts.reduce((a,b)=>a+(Number(b)||0),0);const r=(Number(sv.rate)||0)/1200;let interest=0;amts.forEach((a,j)=>{interest+=(Number(a)||0)*r*(N-j);});const matching=sv.matching?principal:0;return{N,principal,interest:Math.round(interest),matching,total:Math.round(principal+interest+matching)};}
+
+const DEFAULT_STATE={
+  profile:{place:'복무지 미설정',enlist:'2025-09-04',discharge:'2027-06-03',mealCost:9000,mealCost2025:7000,transitCost:3300,payStartDay:1,leave1:15,leave2:13,sick:30,trainStart:'2025-09-04',trainEnd:'2025-09-25',boeunStart:'',boeunEnd:'',customLeaves:[{name:'특별휴가',days:0,memo:''},{name:'청원휴가',days:0,memo:''},{name:'공가',days:0,memo:''}]},
+  routine:{pattern:'3교대',cycle:[...PRESETS['3교대']],anchor:'2026-06-01',nightAs2:true},
+  settings:{pctDecimals:7,pctRealtime:true},
+  savings:{firstDate:'2025-09-04',maturityDate:'2027-06-03',rate:5.0,monthly:550000,matching:true,roundAmounts:Array(22).fill(550000)},
+  overrides:{},memos:{},onboarded:false,
+};
+const KEY='gongik_shift_v04';
+const FIXED_LEAVES=['특별휴가','청원휴가','공가'];
+function normalizeLeaves(cl){return FIXED_LEAVES.map(n=>{const f=(cl||[]).find(c=>c.name===n);return f?{name:n,days:Number(f.days)||0,memo:f.memo||''}:{name:n,days:0,memo:''};});}
+function mergeState(p){const m={...DEFAULT_STATE,...p,profile:{...DEFAULT_STATE.profile,...(p.profile||{})},routine:{...DEFAULT_STATE.routine,...(p.routine||{})},settings:{...DEFAULT_STATE.settings,...(p.settings||{})},savings:{...DEFAULT_STATE.savings,...(p.savings||{})},overrides:p.overrides||{},memos:p.memos||{},onboarded:p.onboarded!==undefined?p.onboarded:true};m.profile.customLeaves=normalizeLeaves(m.profile.customLeaves);return m;}
+const load=()=>{try{const r=localStorage.getItem(KEY);if(r)return mergeState(JSON.parse(r));}catch(e){}return null;};
+const persist=s=>{try{localStorage.setItem(KEY,JSON.stringify(s));}catch(e){}};
+
+/* ===== 대시보드 ===== */
+function Dashboard({state,setState,setTab,setPeriodAnchor}){
+  const [,force]=useState(0);const [manage,setManage]=useState(null);
+  const rt=state.settings.pctRealtime;
+  useEffect(()=>{if(!rt)return;const id=setInterval(()=>force(x=>x+1),60);return()=>clearInterval(id);},[rt]);
+  const t=todayStr(),p=state.profile;
+  const totalD=diffDays(p.enlist,p.discharge)+1,curD=Math.min(Math.max(diffDays(p.enlist,t)+1,0),totalD),remD=totalD-curD;
+  const e0=Date.UTC(parse(p.enlist).y,parse(p.enlist).m-1,parse(p.enlist).d),e1=Date.UTC(parse(p.discharge).y,parse(p.discharge).m-1,parse(p.discharge).d)+864e5;
+  const pct=Math.min(Math.max((Date.now()-e0)/(e1-e0)*100,0),100);
+  const tp=parse(t),ri=rankInfo(p.enlist,tp.y,tp.m);
+  const per={start:ymd(tp.y,tp.m,1),end:ymd(tp.y,tp.m,daysInMonth(tp.y,tp.m))},m=calcPeriod(state,per.start,per.end),lv=tally(state);
+  return (
+    <div className="screen"><h1 className="title">Dashboard</h1>
+      <div className="card">
+        <div className="row" style={{marginBottom:9}}><span className="dim">📍</span><b>{p.place}</b></div>
+        <div className="row" style={{marginBottom:9}}><span className="dim">👤</span><b>{ri?`${ri.rank} ${ri.hobong}호봉`:'-'}</b><span className="muted">·</span><span>{ri?won(ri.salary)+'원':'-'}</span></div>
+        <div className="row"><span className="dim">📅</span><span className="muted">{p.enlist} ~ {p.discharge}</span></div>
+        <div className="progress"><div style={{width:pct+'%'}}/></div>
+        <div className="row" style={{justifyContent:'space-between'}}><b style={{fontSize:20}}>D-{remD}</b><span className="muted" style={{fontVariantNumeric:'tabular-nums'}}>{pct.toFixed(state.settings.pctDecimals)}%</span></div>
+        <div className="stat3" style={{marginTop:14}}><div><div className="k">총 근무일</div><div className="n">{totalD}</div></div><div><div className="k">현재 근무일</div><div className="n">{curD}</div></div><div><div className="k">남은 근무일</div><div className="n">{remD}</div></div></div>
+      </div>
+      <div className="card" onClick={()=>{setPeriodAnchor(t);setTab('cal');}} style={{cursor:'pointer'}}>
+        <div className="muted" style={{textAlign:'center',fontSize:14}}>{per.start.replace(/-/g,'.')} ~ {per.end.replace(/-/g,'.')}</div>
+        <div style={{textAlign:'center',fontSize:33,fontWeight:800,margin:'8px 0 8px'}}>{won(m.total)} <span style={{fontSize:18}} className="muted">KRW</span></div>
+        <div className="stat3"><div><div className="k">기본급</div><div className="n" style={{fontSize:15}}>{won(m.base)}</div></div><div><div className="k">식비</div><div className="n" style={{fontSize:15}}>{won(m.meal)}</div></div><div><div className="k">교통비</div><div className="n" style={{fontSize:15}}>{won(m.transit)}</div></div></div>
+        <div className="note" style={{textAlign:'center',marginTop:10}}>탭하면 달력·상세계산 →</div>
+      </div>
+      <div className="card">
+        <div className="sec-lab">휴가 현황 <span className="dim" style={{fontWeight:500}}>· 탭하면 사용내역 관리</span></div>
+        <LvRow c="var(--leave)" name="1년차 연가" rem={p.leave1-lv.l1} total={p.leave1} onClick={()=>setManage({key:'연가',title:'연가'})}/>
+        <LvRow c="var(--leave)" name="2년차 연가" rem={p.leave2-lv.l2} total={p.leave2} onClick={()=>setManage({key:'연가',title:'연가'})}/>
+        <LvRow c="var(--sick)" name="병가" rem={p.sick-lv.sick} total={p.sick} onClick={()=>setManage({key:'병가',title:'병가'})}/>
+        {p.customLeaves.map(cl=><LvRow key={cl.name} c={colorOf(state,cl.name)} name={cl.name} rem={cl.days>0?cl.days-lv.custom[cl.name]:null} total={cl.days} used={lv.custom[cl.name]} memo={cl.memo} onClick={()=>setManage({key:cl.name,title:cl.name})}/>)}
+      </div>
+      {manage && <LeaveManageModal state={state} setState={setState} leaveKey={manage.key} title={manage.title} onClose={()=>setManage(null)}/>}
+    </div>
+  );
+}
+function LvRow({c,name,rem,total,used,memo,onClick}){return <div className="leave-item" onClick={onClick}><div className="leave-ic" style={{background:c+'22',color:c}}>{name[0]}</div><div style={{flex:1}}><b>{name}</b>{memo?<div className="note">{memo}</div>:null}</div><div style={{textAlign:'right'}}>{rem!==null?<div style={{fontWeight:800,fontSize:18}}>{rem} <span className="muted" style={{fontSize:14}}>/ {total}일</span></div>:<div style={{fontWeight:800,fontSize:18}}>{used||0}<span className="muted" style={{fontSize:14}}>일 사용</span></div>}</div></div>;}
+
+function LeaveManageModal({state,setState,leaveKey,title,onClose}){
+  const isY=leaveKey==='연가',keySet=isY?['연가','오전반가','오후반가']:[leaveKey];
+  const [date,setDate]=useState(todayStr());const [sub,setSub]=useState('연가');const [memo,setMemo]=useState('');
+  const e=parse(state.profile.enlist),y1End=ymd(e.y+1,e.m,e.d);
+  const list=Object.entries(state.overrides).filter(([d,st])=>keySet.includes(st)).sort((a,b)=>epoch(a[0])-epoch(b[0]));
+  const add=()=>{const st=isY?sub:leaveKey;const v=validatePlace(state,date,st);if(!v.ok){alert(v.msg);return;}const ov={...state.overrides,[date]:st};const mm={...state.memos};if(memo.trim())mm[date]=memo.trim();setState({...state,overrides:ov,memos:mm});setMemo('');};
+  const rm=d=>{const ov={...state.overrides};delete ov[d];const mm={...state.memos};delete mm[d];setState({...state,overrides:ov,memos:mm});};
+  const setMemoFor=(d,v)=>{const mm={...state.memos};if(v.trim())mm[d]=v;else delete mm[d];setState({...state,memos:mm});};
+  return <div className="modal-bg" onClick={onClose}><div className="modal" onClick={ev=>ev.stopPropagation()}><div className="grip"/><b style={{fontSize:18}}>{title} 사용내역</b>
+    <div className="card" style={{marginTop:14,background:'var(--card2)'}}><div className="sec-lab">날짜 추가</div>
+      <label className="fld"><span className="lab">날짜</span><input type="date" value={date} onChange={ev=>setDate(ev.target.value)}/></label>
+      {isY&&<label className="fld"><span className="lab">종류</span><select value={sub} onChange={ev=>setSub(ev.target.value)}><option value="연가">종일 (1일)</option><option value="오전반가">오전반가 (0.5일·식비X)</option><option value="오후반가">오후반가 (0.5일·식비O)</option></select></label>}
+      <label className="fld"><span className="lab">메모(사유)</span><input value={memo} onChange={ev=>setMemo(ev.target.value)} placeholder="예: 가족 행사"/></label>
+      <button className="btn btn-sm" onClick={add}>+ 추가</button></div>
+    {list.length===0&&<div className="note" style={{padding:'8px 2px'}}>아직 사용내역이 없음.</div>}
+    {list.map(([d,st])=>{const yr=isY?(epoch(d)<epoch(y1End)?'1년차':'2년차'):null;const c=colorOf(state,st);return <div key={d} className="used-row"><div style={{flex:1}}><div className="row" style={{gap:6}}><b style={{fontSize:14}}>{d}</b><span className="tag2" style={{background:c+'26',color:c}}>{st}</span>{yr&&<span className="muted" style={{fontSize:11}}>{yr}</span>}</div><input style={{marginTop:6,padding:'7px 10px',fontSize:13}} value={state.memos[d]||''} placeholder="메모" onChange={ev=>setMemoFor(d,ev.target.value)}/></div><span className="x" onClick={()=>rm(d)}>×</span></div>;})}
+  </div></div>;
+}
+
+/* ===== 달력 (급여기간 단위) ===== */
+function CalendarView({state,setState,periodAnchor,setPeriodAnchor}){
+  const [sel,setSel]=useState(null);
+  const pa=parse(periodAnchor);const per={start:ymd(pa.y,pa.m,1),end:ymd(pa.y,pa.m,daysInMonth(pa.y,pa.m))};
+  const data=calcPeriod(state,per.start,per.end);
+  const fd=dow(parse(per.start).y,parse(per.start).m,parse(per.start).d);
+  const cells=[];for(let i=0;i<fd;i++)cells.push(null);data.days.forEach(d=>cells.push(d));
+  const nav=dl=>{setPeriodAnchor(dl<0?addDays(per.start,-1):addDays(per.end,1));setSel(null);};
+  const weCnt=monthWeekends(pa.y,pa.m),holCnt=monthHolidays(pa.y,pa.m),restCap=weCnt+holCnt,restUsed=monthRestUsed(state,pa.y,pa.m),restLeft=restCap-restUsed;
+  const setDay=(ds,st)=>{const curOv=state.overrides[ds];if(st!==null&&st!==curOv){if(st==='휴무'){const inM=parse(ds).y===pa.y&&parse(ds).m===pa.m;if(inM&&restLeft<=0){alert(`이 달은 더 이상 휴무를 넣을 수 없습니다. (이번 달 휴일 ${restCap}일)`);return;}}const v=validatePlace(state,ds,st);if(!v.ok){alert(v.msg);return;}}const ov={...state.overrides};if(st===null)delete ov[ds];else ov[ds]=st;if(st==='야간'){const nx=addDays(ds,1);if(!ov[nx])ov[nx]='비번';}setState({...state,overrides:ov});};
+  const setMemo=(ds,v)=>{const mm={...state.memos};if(v.trim())mm[ds]=v;else delete mm[ds];setState({...state,memos:mm});};
+  const sameMonth=parse(per.start).m===parse(per.end).m&&parse(per.start).y===parse(per.end).y;
+  const ri0=rankInfo(state.profile.enlist,parse(per.start).y,parse(per.start).m);
+  const legend=[['주간','var(--day)'],['야간','var(--night)'],['비번','var(--off)'],['휴무','var(--rest)'],['연가','var(--leave)'],['반가','var(--half)'],['병가','var(--sick)'],['훈련','var(--train)'],...state.profile.customLeaves.map(c=>[c.name,colorOf(state,c.name)])];
+  return (
+    <div className="screen"><h1 className="title">달력</h1>
+      <div className="card">
+        <div className="row" style={{justifyContent:'space-between',marginBottom:8}}><button className="btn btn-ghost" style={{width:44,padding:10}} onClick={()=>nav(-1)}>‹</button><b style={{fontSize:19}}>{pa.y}년 {pa.m}월</b><button className="btn btn-ghost" style={{width:44,padding:10}} onClick={()=>nav(1)}>›</button></div>
+        <div className="row" style={{justifyContent:'space-between',marginBottom:12,fontSize:12.5}}><span className="muted">총 휴일: 주말 {weCnt} + 공휴일 {holCnt} = {restCap}일</span><span style={{fontWeight:800,color:restLeft<=0?'var(--sick)':'var(--rest)'}}>휴무 {restLeft}/{restCap}</span></div>
+        <div className="cal-grid">{['일','월','화','수','목','금','토'].map(w=><div key={w} className="cal-dow">{w}</div>)}</div>
+        <div className="cal-grid" style={{marginTop:4}}>{cells.map((c,i)=>{if(!c)return <div key={i}/>;const hol=HOLIDAYS[c.ds],st=c.st,col=st?colorOf(state,st):'var(--dim)';const tag=st==='오전반가'?'오전':st==='오후반가'?'오후':st==='보은연수'?'보은':(st&&st.length>2?st.slice(0,2):st);return <div key={i} className={"cal-cell"+(c.svc?'':' out')+(sel===c.ds?' sel':'')} onClick={()=>c.svc&&setSel(c.ds)} title={hol||''}><div className={"cal-num"+(hol?' hol':'')}>{c.d}</div>{state.memos[c.ds]&&<span className="cal-memo">📝</span>}{st&&<div className="cal-tag" style={{background:col+'26',color:col}}>{tag}</div>}{c.svc&&<div className="cal-amt">+{won(c.daily)}</div>}</div>;})}</div>
+        <div className="legend">{legend.map(([k,v])=><span key={k}><i className="dot" style={{background:v}}/>{k}</span>)}</div>
+      </div>
+      <div className="card">
+        <div className="brk"><div><div className="l">기본급</div><div className="s">{sameMonth&&ri0?`${won(ri0.salary)}원 × (${data.inSvc}/${daysInMonth(parse(per.start).y,parse(per.start).m)}일) · ${ri0.rank} ${ri0.hobong}호봉`:'기간 일할 합산'}{data.excDays>0?` · 초과병가 ${data.excDays}일 미지급`:''}</div></div><div className="v">{won(data.base)}원</div></div>
+        <div className="brk"><div><div className="l">식비</div><div className="s">{won(parse(per.start).y<=2025?state.profile.mealCost2025:state.profile.mealCost)}원 × {data.mealDays}일</div></div><div className="v">{won(data.meal)}원</div></div>
+        <div className="brk"><div><div className="l">교통비</div><div className="s">{won(state.profile.transitCost)}원 × {data.transitDays}일</div></div><div className="v">{won(data.transit)}원</div></div>
+        <div className="brk"><div className="l" style={{fontSize:18}}>총 급여</div><div className="v" style={{fontSize:21,color:'var(--blue)'}}>{won(data.total)}원</div></div>
+      </div>
+      {sel && <DayModal ds={sel} state={state} onClose={()=>setSel(null)} onSet={setDay} onMemo={setMemo}/>}
+    </div>
+  );
+}
+function DayModal({ds,state,onClose,onSet,onMemo}){
+  const isOv=!!state.overrides[ds],cur=dayStatus(state,ds),hol=HOLIDAYS[ds];
+  const pick=['주간','야간','비번','휴무','연가','오전반가','오후반가','병가',...state.profile.customLeaves.map(c=>c.name)];
+  const showMemo=cur&&!WORK.includes(cur);
+  return <div className="modal-bg" onClick={onClose}><div className="modal" onClick={e=>e.stopPropagation()}><div className="grip"/>
+    <div className="row" style={{justifyContent:'space-between'}}><b style={{fontSize:18}}>{ds}</b>{hol&&<span style={{color:'var(--holiday)',fontWeight:700,fontSize:14}}>🔴 {hol}</span>}</div>
+    <div className="note" style={{margin:'8px 0 14px'}}>현재: <b style={{color:colorOf(state,cur)}}>{cur||'-'}</b> {isOv?'(수동 지정)':'(루틴 자동)'}</div>
+    <div className="opt">{pick.map(t=><button key={t} className={cur===t?'on':''} style={cur===t?{background:colorOf(state,t),borderColor:colorOf(state,t),color:'#fff'}:{}} onClick={()=>onSet(ds,t)}>{t}</button>)}</div>
+    {showMemo&&<label className="fld" style={{marginTop:16,marginBottom:8}}><span className="lab">메모(사유)</span><input value={state.memos[ds]||''} placeholder="예: 병원 진료" onChange={e=>onMemo(ds,e.target.value)}/></label>}
+    {isOv&&<button className="btn btn-ghost btn-sm" style={{marginTop:8}} onClick={()=>{onSet(ds,null);onClose();}}>수동 지정 해제 (루틴으로)</button>}
+    <button className="btn btn-sm" style={{marginTop:8}} onClick={onClose}>닫기</button>
+    <div className="note" style={{marginTop:12}}>야간 선택 시 다음날 자동 비번.</div>
+  </div></div>;
+}
+
+/* ===== 루틴 ===== */
+function RoutineView({state,setState}){
+  const r=state.routine;const setR=p=>setState({...state,routine:{...r,...p}});const setPreset=p=>setR({pattern:p,cycle:[...PRESETS[p]]});
+  const tapCell=i=>{const c=[...r.cycle];c[i]=DAY_TYPES[(DAY_TYPES.indexOf(c[i])+1)%4];setR({cycle:c});};
+  return <div className="screen"><h1 className="title">근무 루틴</h1>
+    <div className="card"><div className="sec-lab">근무 형태</div><div className="seg">{[['3교대','3조2교대'],['주야비휴','4조2교대'],['통상','통상근무']].map(([k,l])=><button key={k} className={r.pattern===k?'on':''} onClick={()=>setPreset(k)}>{l}</button>)}</div><div className="note" style={{marginTop:10}}>3조2교대는 휴무 없이 주/야/비만. 휴무·대체휴무는 달력에서 직접 지정 → 야간 로테이션 안 밀림.</div></div>
+    <div className="card"><label className="fld"><span className="lab">사이클 시작일(기준일)</span><input type="date" value={r.anchor} onChange={e=>setR({anchor:e.target.value})}/></label><div className="sec-lab">사이클 ({r.cycle.length}일) · 셀 탭 = 주→야→비→휴</div><div className="cyc-grid">{r.cycle.map((t,i)=><div key={i} className="cyc-cell" onClick={()=>tapCell(i)} style={{background:colorOf(state,t)+'26',borderColor:colorOf(state,t)+'55',color:colorOf(state,t)}}><span style={{fontSize:9,color:'var(--dim)'}}>{i+1}</span>{t}</div>)}</div><div className="row" style={{gap:8,marginTop:14}}><button className="btn btn-ghost btn-sm" onClick={()=>setR({cycle:[...r.cycle,'주간']})}>+ 칸</button><button className="btn btn-ghost btn-sm" onClick={()=>r.cycle.length>1&&setR({cycle:r.cycle.slice(0,-1)})}>− 칸</button></div></div>
+    <div className="card"><div className="row" style={{justifyContent:'space-between'}}><div><b>야간 = 2일 근무 처리</b><div className="note">ON: 야간+비번 각각 식비·교통비</div></div><div className={"switch"+(r.nightAs2?' on':'')} onClick={()=>setR({nightAs2:!r.nightAs2})}><i/></div></div></div>
+  </div>;
+}
+
+/* ===== 설정: 메뉴 → 세부 ===== */
+function SettingsView({state,setState}){
+  const [page,setPage]=useState(null);
+  const p=state.profile,setP=x=>setState({...state,profile:{...p,...x}}),num=(k,v)=>setP({[k]:Number(v)||0});
+  const Field=({lab,children,last})=><label className="fld" style={last?{marginBottom:0}:{}}><span className="lab">{lab}</span>{children}</label>;
+  if(page===null){
+    const menu=[['프로필','👤','소집일·복무지'],['급여','💰','식비·교통비'],['휴가','🔖','연가·병가·추가 휴가'],['군적금','🏦','적금 계산'],['훈련소·연수','🎖️','훈련소·보은연수 기간'],['복무율','📊','실시간·소수점'],['백업·복구','💾','내보내기/불러오기·초기화']];
+    return <div className="screen"><h1 className="title">설정</h1>{menu.map(([k,ic,sub])=><div key={k} className="menu-item" onClick={()=>setPage(k)}><div className="menu-ic">{ic}</div><div style={{flex:1}}><b>{k}</b><div className="note">{sub}</div></div><span className="chev">›</span></div>)}
+      <div className="note" style={{marginTop:6,padding:'0 4px'}}>v0.7 · 지하철공익 월급계산기</div></div>;
+  }
+  const Top=({t})=><div className="topbar"><span className="back" onClick={()=>setPage(null)}>‹</span><h2>{t}</h2></div>;
+  if(page==='프로필')return <div className="screen"><Top t="프로필"/><div className="card"><Field lab="복무지명"><input value={p.place} onChange={e=>setP({place:e.target.value})}/></Field><Field lab="소집일"><input type="date" value={p.enlist} onChange={e=>setP({enlist:e.target.value,discharge:computeDischarge(e.target.value)})}/></Field><Field lab="소집해제일" last><input type="date" value={p.discharge} onChange={e=>setP({discharge:e.target.value})}/></Field><div className="note" style={{marginTop:6}}>소집일을 바꾸면 복무기간(1년 9개월) 기준으로 소집해제일이 자동 조정됨. 연장 등으로 다르면 소집해제일만 따로 수정 가능.</div></div></div>;
+  if(page==='급여')return <div className="screen"><Top t="급여"/><div className="card"><Field lab="식비 (2026~, 1일)"><input type="number" value={p.mealCost} onChange={e=>num('mealCost',e.target.value)}/></Field><Field lab="식비 (2025년, 1일)"><input type="number" value={p.mealCost2025} onChange={e=>num('mealCost2025',e.target.value)}/></Field><Field lab="교통비 (1일)" last><input type="number" value={p.transitCost} onChange={e=>num('transitCost',e.target.value)}/></Field></div></div>;
+  if(page==='휴가'){const setCL=(i,x)=>setP({customLeaves:p.customLeaves.map((c,j)=>j===i?{...c,...x}:c)});return <div className="screen"><Top t="휴가"/><div className="card"><div className="sec-lab">기본 휴가</div><Field lab="1년차 연가"><input type="number" value={p.leave1} onChange={e=>num('leave1',e.target.value)}/></Field><Field lab="2년차 연가"><input type="number" value={p.leave2} onChange={e=>num('leave2',e.target.value)}/></Field><Field lab="병가" last><input type="number" value={p.sick} onChange={e=>num('sick',e.target.value)}/></Field></div>
+    <div className="card"><div className="sec-lab">추가 휴가 (받은 일수 입력)</div>{p.customLeaves.map((c,i)=><div key={c.name} style={{border:'1px solid var(--line)',borderRadius:12,padding:12,marginBottom:10}}><div className="row" style={{gap:8,marginBottom:8}}><b style={{flex:1,color:colorOf(state,c.name)}}>{c.name}</b><input style={{width:90}} type="number" value={c.days} onChange={e=>setCL(i,{days:Number(e.target.value)||0})} placeholder="일수"/><span className="muted">일</span></div><input value={c.memo} onChange={e=>setCL(i,{memo:e.target.value})} placeholder="사유/메모 (어떻게 받았는지)"/></div>)}<div className="note">받은 만큼 일수를 넣어야 달력에 입력 가능. 0이면 달력에서 선택 시 안내창이 뜸.</div></div></div>;}
+  if(page==='군적금')return <SavingsView state={state} setState={setState} Top={Top}/>;
+  if(page==='훈련소·연수')return <div className="screen"><Top t="훈련소·연수"/><div className="card"><div className="sec-lab">식비·교통비 미지급, 봉급 정상</div><div className="row" style={{gap:8,marginBottom:14}}><Field lab="훈련 입소"><input type="date" value={p.trainStart} onChange={e=>setP({trainStart:e.target.value})}/></Field><Field lab="훈련 퇴소"><input type="date" value={p.trainEnd} onChange={e=>setP({trainEnd:e.target.value})}/></Field></div><div className="row" style={{gap:8}}><Field lab="보은연수 시작"><input type="date" value={p.boeunStart} onChange={e=>setP({boeunStart:e.target.value})}/></Field><Field lab="보은연수 종료"><input type="date" value={p.boeunEnd} onChange={e=>setP({boeunEnd:e.target.value})}/></Field></div></div></div>;
+  if(page==='복무율'){const s=state.settings,setS=x=>setState({...state,settings:{...s,...x}});return <div className="screen"><Top t="복무율"/><div className="card"><div className="row" style={{justifyContent:'space-between',marginBottom:16}}><div><b>실시간 갱신</b><div className="note">현재 시각 기준 실시간 상승</div></div><div className={"switch"+(s.pctRealtime?' on':'')} onClick={()=>setS({pctRealtime:!s.pctRealtime})}><i/></div></div><Field lab="소수점 자리수" last><select value={s.pctDecimals} onChange={e=>setS({pctDecimals:Number(e.target.value)})}>{[1,2,3,4,5,6,7].map(n=><option key={n} value={n}>{n}번째</option>)}</select></Field></div></div>;}
+  if(page==='백업·복구'){
+    const exportJSON=()=>{const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`공익교대_백업_${todayStr()}.json`;a.click();};
+    const importJSON=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{setState(mergeState(JSON.parse(r.result)));alert('복구 완료');}catch(err){alert('파일을 읽을 수 없음');}};r.readAsText(f);};
+    return <div className="screen"><Top t="백업·복구"/><div className="card"><div className="row" style={{gap:8}}><button className="btn btn-ghost btn-sm" onClick={exportJSON}>📤 내보내기</button><label className="btn btn-ghost btn-sm" style={{textAlign:'center'}}>📥 불러오기<input type="file" accept="application/json" style={{display:'none'}} onChange={importJSON}/></label></div><button className="btn btn-ghost btn-sm" style={{marginTop:12}} onClick={()=>{if(confirm('데이터를 초기값으로 되돌릴까요?')){try{localStorage.removeItem(KEY);}catch(e){}location.reload();}}}>데이터 초기화</button></div></div>;
+  }
+  return null;
+}
+
+/* ===== 군적금 ===== */
+function SavingsView({state,setState,Top}){
+  const sv=state.savings;const setSv=x=>setState({...state,savings:{...sv,...x}});
+  const [open,setOpen]=useState(false);
+  // 회차 수 = 첫납입~만기 개월
+  const N=Math.max(monthsBetween(sv.firstDate,sv.maturityDate),1);
+  // 회차 배열 길이 동기화
+  useEffect(()=>{let a=sv.roundAmounts||[];if(a.length!==N){const na=Array.from({length:N},(_,i)=>a[i]!==undefined?a[i]:sv.monthly);setSv({roundAmounts:na});}},[N]);
+  const amts=sv.roundAmounts||[];const res=computeSavings({...sv,roundAmounts:amts});
+  const setRound=(i,v)=>{const a=[...amts];a[i]=Number(v)||0;setSv({roundAmounts:a});};
+  const applyAll=()=>setSv({roundAmounts:Array(N).fill(Number(sv.monthly)||0)});
+  return <div className="screen"><Top t="군적금"/>
+    <div className="card">
+      <label className="fld"><span className="lab">첫 납입일</span><input type="date" value={sv.firstDate} onChange={e=>setSv({firstDate:e.target.value})}/></label>
+      <label className="fld"><span className="lab">만기 일자</span><input type="date" value={sv.maturityDate} onChange={e=>setSv({maturityDate:e.target.value})}/></label>
+      <label className="fld"><span className="lab">연 이자율 (%)</span><input type="number" step="0.01" value={sv.rate} onChange={e=>setSv({rate:Number(e.target.value)||0})}/></label>
+      <label className="fld"><span className="lab">매달 납입액</span><input type="number" value={sv.monthly} onChange={e=>setSv({monthly:Number(e.target.value)||0})}/></label>
+      <button className="btn btn-ghost btn-sm" onClick={applyAll}>매달 납입액으로 전체 회차 채우기</button>
+      <div className="row" style={{justifyContent:'space-between',marginTop:16}}><div><b>매칭지원금 적용</b><div className="note">원금 100% 정부 매칭(1:1) 추정</div></div><div className={"switch"+(sv.matching?' on':'')} onClick={()=>setSv({matching:!sv.matching})}><i/></div></div>
+    </div>
+    <div className="card"><div className="row" style={{justifyContent:'space-between'}}><div className="sec-lab" style={{margin:0}}>월 납입액 상세 ({N}회차)</div><span className="muted" style={{fontSize:13,cursor:'pointer'}} onClick={()=>setOpen(!open)}>{open?'접기 ▲':'펼치기 ▼'}</span></div>
+      {open&&<div style={{marginTop:10}}>{amts.map((a,i)=><div key={i} className="round-row"><span className="rl">{i+1}회차</span><input type="number" value={a} onChange={e=>setRound(i,e.target.value)}/><span className="muted">원</span></div>)}</div>}
+    </div>
+    <div className="card">
+      <div className="brk"><div className="l">총 원금</div><div className="v">{won(res.principal)}원</div></div>
+      <div className="brk"><div><div className="l">예상 이자</div><div className="s">단리 · 연 {sv.rate}%</div></div><div className="v">{won(res.interest)}원</div></div>
+      <div className="brk"><div className="l">매칭지원금</div><div className="v">{won(res.matching)}원</div></div>
+      <div className="brk"><div className="l" style={{fontSize:18}}>총 수령액</div><div className="v" style={{fontSize:21,color:'var(--blue)'}}>{won(res.total)}원</div></div>
+      <div className="note" style={{marginTop:10}}>※ 추정치. 실제 이자·매칭지원금은 가입 상품·정부 규정에 따라 다를 수 있음(투자·금융 조언 아님).</div>
+    </div>
+  </div>;
+}
+
+/* ===== 온보딩 (첫 실행 시 1회) ===== */
+function Onboarding({onDone}){
+  const [enlist,setEnlist]=useState(todayStr());
+  const [discharge,setDischarge]=useState(computeDischarge(todayStr()));
+  const setE=v=>{setEnlist(v);setDischarge(computeDischarge(v));};
+  return <div className="screen"><h1 className="title">시작하기</h1>
+    <div className="card">
+      <div className="note" style={{marginBottom:16,fontSize:14,color:'var(--sub)'}}>지하철공익 월급계산기입니다.<br/>먼저 본인 정보를 입력하세요. (나중에 설정에서 수정 가능)</div>
+      <label className="fld"><span className="lab">소집일</span><input type="date" value={enlist} onChange={e=>setE(e.target.value)}/></label>
+      <label className="fld"><span className="lab">소집해제일 (자동: 1년 9개월, 다르면 수정)</span><input type="date" value={discharge} onChange={e=>setDischarge(e.target.value)}/></label>
+      <button className="btn" onClick={()=>onDone(enlist,discharge)}>시작</button>
+    </div>
+    <div className="card"><div className="note">시작 후 ① 루틴 탭에서 본인 근무 형태(3조2교대 등)와 사이클 시작일 설정, ② 설정 탭에서 식비·교통비·휴가 일수 입력하면 됩니다.</div></div>
+  </div>;
+}
+
+/* ===== 루트 ===== */
+function App(){
+  const [state,setState]=useState(()=>load()||DEFAULT_STATE);
+  const [tab,setTab]=useState('home');
+  const [periodAnchor,setPeriodAnchor]=useState(()=>todayStr());
+  useEffect(()=>{persist(state);},[state]);
+  if(!state.onboarded) return <Onboarding onDone={(enlist,discharge)=>setState({...state,onboarded:true,profile:{...state.profile,enlist,discharge},savings:{...state.savings,firstDate:enlist,maturityDate:discharge},routine:{...state.routine,anchor:enlist}})}/>;
+  const tabs=[['home','🏠','홈'],['cal','📅','달력'],['routine','🔁','루틴'],['settings','⚙️','설정']];
+  return <div>
+    {tab==='home'&&<Dashboard state={state} setState={setState} setTab={setTab} setPeriodAnchor={setPeriodAnchor}/>}
+    {tab==='cal'&&<CalendarView state={state} setState={setState} periodAnchor={periodAnchor} setPeriodAnchor={setPeriodAnchor}/>}
+    {tab==='routine'&&<RoutineView state={state} setState={setState}/>}
+    {tab==='settings'&&<SettingsView state={state} setState={setState}/>}
+    <div className="tabbar">{tabs.map(([k,ic,l])=><button key={k} className={tab===k?'on':''} onClick={()=>setTab(k)}><span className="ico">{ic}</span>{l}</button>)}</div>
+  </div>;
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
