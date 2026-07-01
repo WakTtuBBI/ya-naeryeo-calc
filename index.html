@@ -6,12 +6,16 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-<meta name="apple-mobile-web-app-title" content="공익교대" />
+<meta name="apple-mobile-web-app-title" content="야 내려" />
 <meta name="theme-color" content="#0d0e10" />
 <meta name="format-detection" content="telephone=no" />
 <link rel="icon" type="image/png" href="icon.png" />
 <link rel="apple-touch-icon" href="icon.png" />
-<title>공익교대 — 지하철공익 월급계산기 v0.7</title>
+<title>지하철 공익 월급계산기 - 야 내려 v1.1</title>
+<meta property="og:type" content="website" />
+<meta property="og:title" content="지하철 공익 월급계산기 - 야 내려 v1.1" />
+<meta property="og:description" content="지하철공익(사회복무요원) 교대근무 월급계산기 — 근무표를 달력에 입력하면 월급 자동 계산" />
+<meta property="og:image" content="https://wakttubbi.github.io/ya-naeryeo-calc/icon.png" />
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
@@ -295,7 +299,7 @@ function SettingsView({state,setState}){
   if(page===null){
     const menu=[['프로필','👤','소집일·복무지'],['급여','💰','식비·교통비'],['휴가','🔖','연가·병가·추가 휴가'],['군적금','🏦','적금 계산'],['훈련소·연수','🎖️','훈련소·보은연수 기간'],['복무율','📊','실시간·소수점'],['백업·복구','💾','내보내기/불러오기·초기화']];
     return <div className="screen"><h1 className="title">설정</h1>{menu.map(([k,ic,sub])=><div key={k} className="menu-item" onClick={()=>setPage(k)}><div className="menu-ic">{ic}</div><div style={{flex:1}}><b>{k}</b><div className="note">{sub}</div></div><span className="chev">›</span></div>)}
-      <div className="note" style={{marginTop:6,padding:'0 4px'}}>v0.7 · 지하철공익 월급계산기</div></div>;
+      <div className="note" style={{marginTop:6,padding:'0 4px'}}>v1.1 · 지하철공익 월급계산기</div></div>;
   }
   const Top=({t})=><div className="topbar"><span className="back" onClick={()=>setPage(null)}>‹</span><h2>{t}</h2></div>;
   if(page==='프로필')return <div className="screen"><Top t="프로필"/><div className="card"><Field lab="복무지명"><input value={p.place} onChange={e=>setP({place:e.target.value})}/></Field><Field lab="소집일"><input type="date" value={p.enlist} onChange={e=>setP({enlist:e.target.value,discharge:computeDischarge(e.target.value)})}/></Field><Field lab="소집해제일" last><input type="date" value={p.discharge} onChange={e=>setP({discharge:e.target.value})}/></Field><div className="note" style={{marginTop:6}}>소집일을 바꾸면 복무기간(1년 9개월) 기준으로 소집해제일이 자동 조정됨. 연장 등으로 다르면 소집해제일만 따로 수정 가능.</div></div></div>;
