@@ -11,9 +11,9 @@
 <meta name="format-detection" content="telephone=no" />
 <link rel="icon" type="image/png" href="icon.png" />
 <link rel="apple-touch-icon" href="icon.png" />
-<title>지하철 공익 월급계산기 - 야 내려 v1.1</title>
+<title>지하철 공익 월급계산기 - 야 내려 v1.3</title>
 <meta property="og:type" content="website" />
-<meta property="og:title" content="지하철 공익 월급계산기 - 야 내려 v1.1" />
+<meta property="og:title" content="지하철 공익 월급계산기 - 야 내려 v1.3" />
 <meta property="og:description" content="지하철공익(사회복무요원) 교대근무 월급계산기 — 근무표를 달력에 입력하면 월급 자동 계산" />
 <meta property="og:image" content="https://wakttubbi.github.io/ya-naeryeo-calc/icon.png" />
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
@@ -93,10 +93,10 @@ const {useState,useEffect,useRef} = React;
 const SALARY={2025:{이병:750000,일병:900000,상병:1200000,병장:1500000},2026:{이병:750000,일병:900000,상병:1200000,병장:1500000}};
 const salaryFor=(y,r)=>(SALARY[y]||SALARY[2026])[r];
 const DAY_TYPES=['주간','야간','비번','휴무'];
-const PRESETS={'3교대':['주간','주간','주간','주간','주간','주간','주간','야간','비번','야간','비번','야간','비번','야간','비번','야간','비번','야간','비번','야간','비번'],'주야비휴':['주간','야간','비번','휴무'],'통상':['휴무','주간','주간','주간','주간','주간','휴무']};
+const PRESETS={'3교대':['주간','주간','주간','주간','주간','주간','주간','야간','비번','야간','비번','야간','비번','야간','비번','야간','비번','야간','비번','야간','비번'],'주야비휴':['주간','야간','비번','휴무'],'통상':['휴무','주간','주간','주간','주간','주간','휴무'],'주간전담':['주간'],'야간전담':['야간','비번','휴무']};
 const SICK_PAY_LIMIT=30; // 누적 30일 초과 병가는 봉급 미지급
-function contrib(s,n){switch(s){case '주간':case '야간':return{m:1,t:1};case '비번':return n?{m:1,t:1}:{m:0,t:0};case '오전반가':return{m:0,t:1};case '오후반가':return{m:1,t:1};default:return{m:0,t:0};}}
-const BASE_COLOR={주간:'var(--day)',야간:'var(--night)',비번:'var(--off)',휴무:'var(--rest)',연가:'var(--leave)',오전반가:'var(--half)',오후반가:'var(--half)',병가:'var(--sick)',훈련:'var(--train)',보은연수:'#9aa0a6'};
+function contrib(s,n){switch(s){case '주간':case '야간':return{m:1,t:1};case '비번':return n?{m:1,t:1}:{m:0,t:0};case '오전반가':case '오전병가':return{m:0,t:1};case '오후반가':case '오후병가':return{m:1,t:1};default:return{m:0,t:0};}}
+const BASE_COLOR={주간:'var(--day)',야간:'var(--night)',비번:'var(--off)',휴무:'var(--rest)',연가:'var(--leave)',오전반가:'var(--half)',오후반가:'var(--half)',병가:'var(--sick)',오전병가:'var(--sick)',오후병가:'var(--sick)',훈련:'var(--train)',보은연수:'#9aa0a6'};
 const CUSTOM_PALETTE=['#ffd24d','#ff9fb0','#c79bff','#7fd1a0','#ffa94d','#74c0fc','#ff8787'];
 function colorOf(st8,st){if(BASE_COLOR[st])return BASE_COLOR[st];const i=st8.profile.customLeaves.findIndex(c=>c.name===st);if(i>=0)return CUSTOM_PALETTE[i%CUSTOM_PALETTE.length];return 'var(--dim)';}
 const WORK=['주간','야간','비번','휴무','훈련','보은연수'];
@@ -142,19 +142,39 @@ function calcPeriod(state,start,end){
   return {start,end,base,meal:Math.round(meal),transit:Math.round(transit),inSvc,mealDays,transitDays,excDays,total:Math.round(base+meal+transit),days};
 }
 
-function tally(state){const e=parse(state.profile.enlist);const y1End=ymd(e.y+1,e.m,e.d);let l1=0,l2=0,sick=0;const custom={};state.profile.customLeaves.forEach(c=>custom[c.name]=0);for(const[ds,st] of Object.entries(state.overrides)){const half=(st==='오전반가'||st==='오후반가');if(st==='연가'||half){const v=half?0.5:1;if(epoch(ds)<epoch(y1End))l1+=v;else l2+=v;}else if(st==='병가')sick++;else if(custom[st]!==undefined)custom[st]++;}return{l1,l2,sick,custom};}
+function tally(state){const e=parse(state.profile.enlist);const y1End=ymd(e.y+1,e.m,e.d);let l1=0,l2=0,sick=0;const custom={};state.profile.customLeaves.forEach(c=>custom[c.name]=0);for(const[ds,st] of Object.entries(state.overrides)){const half=(st==='오전반가'||st==='오후반가');if(st==='연가'||half){const v=half?0.5:1;if(epoch(ds)<epoch(y1End))l1+=v;else l2+=v;}else if(st==='병가')sick++;else if(st==='오전병가'||st==='오후병가')sick+=0.5;else if(custom[st]!==undefined)custom[st]++;}return{l1,l2,sick,custom};}
 // 복무기간 = 1년 9개월(21개월). 소집해제일 = 소집일 + 21개월 - 1일
 function addMonths(s,n){const{y,m,d}=parse(s);let nm=m+n,ny=y+Math.floor((nm-1)/12);nm=((nm-1)%12)+1;return ymd(ny,nm,Math.min(d,daysInMonth(ny,nm)));}
 const computeDischarge=enlist=>addDays(addMonths(enlist,21),-1);
 const monthWeekends=(y,m)=>{let c=0;for(let d=1;d<=daysInMonth(y,m);d++){const w=dow(y,m,d);if(w===0||w===6)c++;}return c;};
 const monthHolidays=(y,m)=>{let c=0;for(let d=1;d<=daysInMonth(y,m);d++){const w=dow(y,m,d);if(HOLIDAYS[ymd(y,m,d)]&&w!==0&&w!==6)c++;}return c;};
-const monthRestUsed=(state,y,m)=>{let c=0;for(let d=1;d<=daysInMonth(y,m);d++)if(state.overrides[ymd(y,m,d)]==='휴무')c++;return c;};
+const monthRestUsed=(state,y,m)=>{let c=0;for(let d=1;d<=daysInMonth(y,m);d++)if(dayStatus(state,ymd(y,m,d))==='휴무')c++;return c;};
 // 휴가 한도 검증: ds를 st로 바꿀 때 한도 초과 여부
 function validatePlace(state,ds,st){const p=state.profile;const tmp={...state.overrides};delete tmp[ds];const lv=tally({...state,overrides:tmp});const e=parse(p.enlist),y1End=ymd(e.y+1,e.m,e.d),isY1=epoch(ds)<epoch(y1End);
   if(st==='연가'||st==='오전반가'||st==='오후반가'){const add=st==='연가'?1:0.5;if(isY1){if(lv.l1+add>p.leave1)return{ok:false,msg:'더 이상 쓸 1년차 연가가 없습니다'};}else{if(lv.l2+add>p.leave2)return{ok:false,msg:'더 이상 쓸 2년차 연가가 없습니다'};}}
-  else if(st==='병가'){if(lv.sick+1>p.sick)return{ok:false,msg:'더 이상 쓸 병가가 없습니다'};}
+  else if(st==='병가'||st==='오전병가'||st==='오후병가'){const add=st==='병가'?1:0.5;if(lv.sick+add>p.sick)return{ok:false,msg:'더 이상 쓸 병가가 없습니다'};}
   else{const cl=p.customLeaves.find(c=>c.name===st);if(cl){if(cl.days<=0)return{ok:false,msg:`받은 ${st}가 없습니다. 만약 받았다면, 설정 탭에 입력해주세요`};if((lv.custom[st]||0)+1>cl.days)return{ok:false,msg:`더 이상 쓸 ${st}가 없습니다`};}}
   return{ok:true};}
+
+// 범위 추가 시 한도 검증(배치)
+function validateBatch(state,dates,st){const p=state.profile;const ov={...state.overrides};dates.forEach(d=>ov[d]=st);const lv=tally({...state,overrides:ov});
+  if(st==='연가'||st==='오전반가'||st==='오후반가'){if(lv.l1>p.leave1)return{ok:false,msg:'1년차 연가 한도를 초과합니다'};if(lv.l2>p.leave2)return{ok:false,msg:'2년차 연가 한도를 초과합니다'};}
+  else if(st==='병가'||st==='오전병가'||st==='오후병가'){if(lv.sick>p.sick)return{ok:false,msg:'병가 한도를 초과합니다'};}
+  else{const cl=p.customLeaves.find(c=>c.name===st);if(cl){if(cl.days<=0)return{ok:false,msg:`받은 ${st}가 없습니다. 설정 탭에 입력해주세요`};if((lv.custom[st]||0)>cl.days)return{ok:false,msg:`${st} 한도를 초과합니다`};}}
+  return{ok:true};}
+// 연속 같은 종류 묶기
+function groupRuns(list){const runs=[];for(const[d,st] of list){const last=runs[runs.length-1];if(last&&last.st===st&&epoch(d)===epoch(last.end)+1){last.end=d;last.n++;}else runs.push({start:d,end:d,st,n:1});}return runs;}
+// 공익인간 백업 파서 (COUNT: 분, 480=1일)
+const GONGIK_MAP={'병가':'병가','연가':'연가','특별휴가':'특별휴가','청원휴가':'청원휴가','공가':'공가','오전반가':'오전반가','오후반가':'오후반가','오전병가':'오전병가','오후병가':'오후병가','교육':'보은연수','보은':'보은연수','보은연수':'보은연수','훈련':'훈련','훈련소':'훈련'};
+function parseGongik(obj){const vac=(obj&&obj.data&&Array.isArray(obj.data.vacations))?obj.data.vacations:null;if(!vac)return null;
+  const ov={},memos={};let imported=0;const skipped=[];const HALF=['오전반가','오후반가','오전병가','오후병가'];const boeun=[],train=[];
+  for(const v of vac){const type=GONGIK_MAP[v.TYPE];if(!type){skipped.push(v.TYPE);continue;}const days=Math.max(1,Math.round((Number(v.COUNT)||480)/480));
+    const dates=HALF.includes(type)?[v.DATE]:Array.from({length:days},(_,i)=>addDays(v.DATE,i));
+    if(type==='보은연수'){boeun.push(...dates);imported+=dates.length;continue;}
+    if(type==='훈련'){train.push(...dates);imported+=dates.length;continue;}
+    dates.forEach(d=>{ov[d]=type;if(v.NAME)memos[d]=v.NAME;});imported+=dates.length;}
+  const rng=a=>a.length?{start:a.reduce((x,y)=>epoch(x)<epoch(y)?x:y),end:a.reduce((x,y)=>epoch(x)>epoch(y)?x:y)}:null;
+  return{ov,memos,boeun:rng(boeun),train:rng(train),imported,skipped:[...new Set(skipped)]};}
 
 // 군적금
 function computeSavings(sv){const amts=sv.roundAmounts||[];const N=amts.length;const principal=amts.reduce((a,b)=>a+(Number(b)||0),0);const r=(Number(sv.rate)||0)/1200;let interest=0;amts.forEach((a,j)=>{interest+=(Number(a)||0)*r*(N-j);});const matching=sv.matching?principal:0;return{N,principal,interest:Math.round(interest),matching,total:Math.round(principal+interest+matching)};}
@@ -213,34 +233,59 @@ function Dashboard({state,setState,setTab,setPeriodAnchor}){
 }
 function LvRow({c,name,rem,total,used,memo,onClick}){return <div className="leave-item" onClick={onClick}><div className="leave-ic" style={{background:c+'22',color:c}}>{name[0]}</div><div style={{flex:1}}><b>{name}</b>{memo?<div className="note">{memo}</div>:null}</div><div style={{textAlign:'right'}}>{rem!==null?<div style={{fontWeight:800,fontSize:18}}>{rem} <span className="muted" style={{fontSize:14}}>/ {total}일</span></div>:<div style={{fontWeight:800,fontSize:18}}>{used||0}<span className="muted" style={{fontSize:14}}>일 사용</span></div>}</div></div>;}
 
+function RangePicker({onConfirm,onClose,initial}){
+  const t=initial||todayStr();
+  const [pa,setPa]=useState({y:parse(t).y,m:parse(t).m});
+  const [start,setStart]=useState(null),[end,setEnd]=useState(null);
+  const nav=dl=>{let nm=pa.m+dl,ny=pa.y;if(nm<1){nm=12;ny--;}if(nm>12){nm=1;ny++;}setPa({y:ny,m:nm});};
+  const pickDay=ds=>{if(!start||(start&&end)){setStart(ds);setEnd(null);}else{if(epoch(ds)<epoch(start)){setEnd(start);setStart(ds);}else setEnd(ds);}};
+  const inSel=ds=>{if(start&&!end)return ds===start;if(start&&end)return epoch(ds)>=epoch(start)&&epoch(ds)<=epoch(end);return false;};
+  const dim=daysInMonth(pa.y,pa.m),fd=dow(pa.y,pa.m,1);const cells=[];for(let i=0;i<fd;i++)cells.push(null);for(let d=1;d<=dim;d++)cells.push(d);
+  const label=start?(end&&end!==start?`${start} ~ ${end}`:start):'날짜를 선택하세요';
+  return <div className="modal-bg" style={{zIndex:110}} onClick={onClose}><div className="modal" onClick={e=>e.stopPropagation()}><div className="grip"/>
+    <b style={{fontSize:17}}>일정 선택</b>
+    <div className="row" style={{justifyContent:'space-between',margin:'14px 0 12px'}}><button className="btn btn-ghost" style={{width:44,padding:8}} onClick={()=>nav(-1)}>‹</button><b style={{fontSize:17}}>{pa.y}년 {pa.m}월</b><button className="btn btn-ghost" style={{width:44,padding:8}} onClick={()=>nav(1)}>›</button></div>
+    <div className="cal-grid">{['일','월','화','수','목','금','토'].map(w=><div key={w} className="cal-dow">{w}</div>)}</div>
+    <div className="cal-grid" style={{marginTop:4}}>{cells.map((d,i)=>{if(!d)return <div key={i}/>;const ds=ymd(pa.y,pa.m,d);const sel=inSel(ds),isEnd=ds===start||ds===end;return <div key={i} onClick={()=>pickDay(ds)} style={{aspectRatio:'1',borderRadius:isEnd?'12px':'8px',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',fontWeight:700,fontSize:14,background:sel?(isEnd?'var(--blue)':'#1e3a5f'):'transparent',color:sel?'#fff':(HOLIDAYS[ds]?'var(--holiday)':'var(--txt)')}}>{d}</div>;})}</div>
+    <div className="row" style={{justifyContent:'space-between',marginTop:16}}><span className="muted" style={{fontSize:14}}>{label}</span><button className="btn" style={{width:'auto',padding:'12px 22px',opacity:start?1:.4}} onClick={()=>start&&onConfirm(start,end||start)}>선택 완료</button></div>
+  </div></div>;
+}
+
 function LeaveManageModal({state,setState,leaveKey,title,onClose}){
-  const isY=leaveKey==='연가',keySet=isY?['연가','오전반가','오후반가']:[leaveKey];
-  const [date,setDate]=useState(todayStr());const [sub,setSub]=useState('연가');const [memo,setMemo]=useState('');
+  const isY=leaveKey==='연가',isSick=leaveKey==='병가';
+  const keySet=isY?['연가','오전반가','오후반가']:(isSick?['병가','오전병가','오후병가']:[leaveKey]);
+  const [range,setRange]=useState(null);const [pick,setPick]=useState(false);const [sub,setSub]=useState(leaveKey);const [memo,setMemo]=useState('');const [desc,setDesc]=useState(true);
   const e=parse(state.profile.enlist),y1End=ymd(e.y+1,e.m,e.d);
+  const HALF=['오전반가','오후반가','오전병가','오후병가'];
   const list=Object.entries(state.overrides).filter(([d,st])=>keySet.includes(st)).sort((a,b)=>epoch(a[0])-epoch(b[0]));
-  const add=()=>{const st=isY?sub:leaveKey;const v=validatePlace(state,date,st);if(!v.ok){alert(v.msg);return;}const ov={...state.overrides,[date]:st};const mm={...state.memos};if(memo.trim())mm[date]=memo.trim();setState({...state,overrides:ov,memos:mm});setMemo('');};
-  const rm=d=>{const ov={...state.overrides};delete ov[d];const mm={...state.memos};delete mm[d];setState({...state,overrides:ov,memos:mm});};
-  const setMemoFor=(d,v)=>{const mm={...state.memos};if(v.trim())mm[d]=v;else delete mm[d];setState({...state,memos:mm});};
-  return <div className="modal-bg" onClick={onClose}><div className="modal" onClick={ev=>ev.stopPropagation()}><div className="grip"/><b style={{fontSize:18}}>{title} 사용내역</b>
+  const runs=groupRuns(list);
+  const subOpts=isY?[['연가','종일 (1일)'],['오전반가','오전반가 (0.5·식비X)'],['오후반가','오후반가 (0.5·식비O)']]:(isSick?[['병가','종일 (1일)'],['오전병가','오전병가 (0.5·식비X)'],['오후병가','오후병가 (0.5·식비O)']]:null);
+  const add=()=>{if(!range){alert('날짜를 선택하세요');return;}const st=(isY||isSick)?sub:leaveKey;const dates=[];if(HALF.includes(st))dates.push(range.start);else for(let d=range.start;epoch(d)<=epoch(range.end);d=addDays(d,1))dates.push(d);const v=validateBatch(state,dates,st);if(!v.ok){alert(v.msg);return;}const ov={...state.overrides},mm={...state.memos};dates.forEach(d=>{ov[d]=st;if(memo.trim())mm[d]=memo.trim();});setState({...state,overrides:ov,memos:mm});setRange(null);setMemo('');};
+  const rmRun=r=>{const ov={...state.overrides},mm={...state.memos};for(let d=r.start;epoch(d)<=epoch(r.end);d=addDays(d,1)){delete ov[d];delete mm[d];}setState({...state,overrides:ov,memos:mm});};
+  const setMemoRun=(r,val)=>{const mm={...state.memos};for(let d=r.start;epoch(d)<=epoch(r.end);d=addDays(d,1)){if(val.trim())mm[d]=val;else delete mm[d];}setState({...state,memos:mm});};
+  return <div className="modal-bg" onClick={onClose}><div className="modal" onClick={ev=>ev.stopPropagation()}><div className="grip"/><div className="row" style={{justifyContent:'space-between'}}><b style={{fontSize:18}}>{title} 사용내역</b>{runs.length>0&&<button className="btn btn-ghost btn-sm" style={{width:'auto',padding:'6px 12px',fontSize:12.5}} onClick={()=>setDesc(!desc)}>{desc?'최신순 ▼':'오래된순 ▲'}</button>}</div>
     <div className="card" style={{marginTop:14,background:'var(--card2)'}}><div className="sec-lab">날짜 추가</div>
-      <label className="fld"><span className="lab">날짜</span><input type="date" value={date} onChange={ev=>setDate(ev.target.value)}/></label>
-      {isY&&<label className="fld"><span className="lab">종류</span><select value={sub} onChange={ev=>setSub(ev.target.value)}><option value="연가">종일 (1일)</option><option value="오전반가">오전반가 (0.5일·식비X)</option><option value="오후반가">오후반가 (0.5일·식비O)</option></select></label>}
+      <label className="fld"><span className="lab">날짜 / 기간</span><button className="btn btn-ghost btn-sm" style={{textAlign:'left'}} onClick={()=>setPick(true)}>{range?(range.end!==range.start?`${range.start} ~ ${range.end}`:range.start):'📅 날짜 선택 (탭)'}</button></label>
+      {subOpts&&<label className="fld"><span className="lab">종류</span><select value={sub} onChange={ev=>setSub(ev.target.value)}>{subOpts.map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></label>}
       <label className="fld"><span className="lab">메모(사유)</span><input value={memo} onChange={ev=>setMemo(ev.target.value)} placeholder="예: 가족 행사"/></label>
       <button className="btn btn-sm" onClick={add}>+ 추가</button></div>
-    {list.length===0&&<div className="note" style={{padding:'8px 2px'}}>아직 사용내역이 없음.</div>}
-    {list.map(([d,st])=>{const yr=isY?(epoch(d)<epoch(y1End)?'1년차':'2년차'):null;const c=colorOf(state,st);return <div key={d} className="used-row"><div style={{flex:1}}><div className="row" style={{gap:6}}><b style={{fontSize:14}}>{d}</b><span className="tag2" style={{background:c+'26',color:c}}>{st}</span>{yr&&<span className="muted" style={{fontSize:11}}>{yr}</span>}</div><input style={{marginTop:6,padding:'7px 10px',fontSize:13}} value={state.memos[d]||''} placeholder="메모" onChange={ev=>setMemoFor(d,ev.target.value)}/></div><span className="x" onClick={()=>rm(d)}>×</span></div>;})}
+    {runs.length===0&&<div className="note" style={{padding:'8px 2px'}}>아직 사용내역이 없음.</div>}
+    {(desc?[...runs].reverse():runs).map((r,i)=>{const yr=isY?(epoch(r.start)<epoch(y1End)?'1년차':'2년차'):null;const c=colorOf(state,r.st);const single=r.start===r.end;const dayLabel=HALF.includes(r.st)&&single?'0.5일':r.n+'일';return <div key={i} className="used-row"><div style={{flex:1}}><div className="row" style={{gap:6,flexWrap:'wrap'}}><b style={{fontSize:14}}>{single?r.start:`${r.start} ~ ${r.end}`}</b><span className="tag2" style={{background:c+'26',color:c}}>{r.st}</span><span className="muted" style={{fontSize:12}}>{dayLabel}</span>{yr&&<span className="muted" style={{fontSize:11}}>{yr}</span>}</div><input style={{marginTop:6,padding:'7px 10px',fontSize:13}} value={state.memos[r.start]||''} placeholder="메모" onChange={ev=>setMemoRun(r,ev.target.value)}/></div><span className="x" onClick={()=>rmRun(r)}>×</span></div>;})}
+    {pick&&<RangePicker initial={range?range.start:todayStr()} onClose={()=>setPick(false)} onConfirm={(s,e2)=>{setRange({start:s,end:e2});setPick(false);}}/>}
   </div></div>;
 }
 
 /* ===== 달력 (급여기간 단위) ===== */
 function CalendarView({state,setState,periodAnchor,setPeriodAnchor}){
   const [sel,setSel]=useState(null);
+  const alerted=useRef(new Set());
   const pa=parse(periodAnchor);const per={start:ymd(pa.y,pa.m,1),end:ymd(pa.y,pa.m,daysInMonth(pa.y,pa.m))};
   const data=calcPeriod(state,per.start,per.end);
   const fd=dow(parse(per.start).y,parse(per.start).m,parse(per.start).d);
   const cells=[];for(let i=0;i<fd;i++)cells.push(null);data.days.forEach(d=>cells.push(d));
   const nav=dl=>{setPeriodAnchor(dl<0?addDays(per.start,-1):addDays(per.end,1));setSel(null);};
   const weCnt=monthWeekends(pa.y,pa.m),holCnt=monthHolidays(pa.y,pa.m),restCap=weCnt+holCnt,restUsed=monthRestUsed(state,pa.y,pa.m),restLeft=restCap-restUsed;
+  useEffect(()=>{const key=pa.y+'-'+pa.m;if(restLeft<0&&!alerted.current.has(key)){alerted.current.add(key);alert(`${pa.y}년 ${pa.m}월은 루틴 휴무가 이 달 휴일 수보다 ${-restLeft}일 많습니다.\n휴무 ${-restLeft}일을 달력에서 '주간'으로 바꿔 지원근무 처리하세요.`);}},[pa.y,pa.m,restLeft]);
   const setDay=(ds,st)=>{const curOv=state.overrides[ds];if(st!==null&&st!==curOv){if(st==='휴무'){const inM=parse(ds).y===pa.y&&parse(ds).m===pa.m;if(inM&&restLeft<=0){alert(`이 달은 더 이상 휴무를 넣을 수 없습니다. (이번 달 휴일 ${restCap}일)`);return;}}const v=validatePlace(state,ds,st);if(!v.ok){alert(v.msg);return;}}const ov={...state.overrides};if(st===null)delete ov[ds];else ov[ds]=st;if(st==='야간'){const nx=addDays(ds,1);if(!ov[nx])ov[nx]='비번';}setState({...state,overrides:ov});};
   const setMemo=(ds,v)=>{const mm={...state.memos};if(v.trim())mm[ds]=v;else delete mm[ds];setState({...state,memos:mm});};
   const sameMonth=parse(per.start).m===parse(per.end).m&&parse(per.start).y===parse(per.end).y;
@@ -267,7 +312,7 @@ function CalendarView({state,setState,periodAnchor,setPeriodAnchor}){
 }
 function DayModal({ds,state,onClose,onSet,onMemo}){
   const isOv=!!state.overrides[ds],cur=dayStatus(state,ds),hol=HOLIDAYS[ds];
-  const pick=['주간','야간','비번','휴무','연가','오전반가','오후반가','병가',...state.profile.customLeaves.map(c=>c.name)];
+  const pick=['주간','야간','비번','휴무','연가','오전반가','오후반가','병가','오전병가','오후병가',...state.profile.customLeaves.map(c=>c.name)];
   const showMemo=cur&&!WORK.includes(cur);
   return <div className="modal-bg" onClick={onClose}><div className="modal" onClick={e=>e.stopPropagation()}><div className="grip"/>
     <div className="row" style={{justifyContent:'space-between'}}><b style={{fontSize:18}}>{ds}</b>{hol&&<span style={{color:'var(--holiday)',fontWeight:700,fontSize:14}}>🔴 {hol}</span>}</div>
@@ -285,7 +330,8 @@ function RoutineView({state,setState}){
   const r=state.routine;const setR=p=>setState({...state,routine:{...r,...p}});const setPreset=p=>setR({pattern:p,cycle:[...PRESETS[p]]});
   const tapCell=i=>{const c=[...r.cycle];c[i]=DAY_TYPES[(DAY_TYPES.indexOf(c[i])+1)%4];setR({cycle:c});};
   return <div className="screen"><h1 className="title">근무 루틴</h1>
-    <div className="card"><div className="sec-lab">근무 형태</div><div className="seg">{[['3교대','3조2교대'],['주야비휴','4조2교대'],['통상','통상근무']].map(([k,l])=><button key={k} className={r.pattern===k?'on':''} onClick={()=>setPreset(k)}>{l}</button>)}</div><div className="note" style={{marginTop:10}}>3조2교대는 휴무 없이 주/야/비만. 휴무·대체휴무는 달력에서 직접 지정 → 야간 로테이션 안 밀림.</div></div>
+    <div className="card"><div className="sec-lab">근무 형태</div><div className="opt" style={{gridTemplateColumns:'repeat(3,1fr)'}}>{[['3교대','3조2교대'],['주야비휴','4조2교대'],['통상','통상근무'],['주간전담','주간전담'],['야간전담','야간전담']].map(([k,l])=><button key={k} className={r.pattern===k?'on':''} style={r.pattern===k?{background:'var(--blue)',borderColor:'var(--blue)',color:'#fff'}:{}} onClick={()=>setPreset(k)}>{l}</button>)}</div>
+      <div className="note" style={{marginTop:10}}>· 3조2교대: 휴무 없이 주/야/비 반복, 휴무는 달력에서 직접.<br/>· 주간전담: 매일 주간, 휴무는 그 달 주말+공휴일 수만큼 달력에서 지정.<br/>· 야간전담: 야/비/휴 반복. 공휴일 적은 달엔 휴무 하나를 달력에서 <b>주간</b>으로 바꿔 지원근무 처리(홀수일 보정).</div></div>
     <div className="card"><label className="fld"><span className="lab">사이클 시작일(기준일)</span><input type="date" value={r.anchor} onChange={e=>setR({anchor:e.target.value})}/></label><div className="sec-lab">사이클 ({r.cycle.length}일) · 셀 탭 = 주→야→비→휴</div><div className="cyc-grid">{r.cycle.map((t,i)=><div key={i} className="cyc-cell" onClick={()=>tapCell(i)} style={{background:colorOf(state,t)+'26',borderColor:colorOf(state,t)+'55',color:colorOf(state,t)}}><span style={{fontSize:9,color:'var(--dim)'}}>{i+1}</span>{t}</div>)}</div><div className="row" style={{gap:8,marginTop:14}}><button className="btn btn-ghost btn-sm" onClick={()=>setR({cycle:[...r.cycle,'주간']})}>+ 칸</button><button className="btn btn-ghost btn-sm" onClick={()=>r.cycle.length>1&&setR({cycle:r.cycle.slice(0,-1)})}>− 칸</button></div></div>
     <div className="card"><div className="row" style={{justifyContent:'space-between'}}><div><b>야간 = 2일 근무 처리</b><div className="note">ON: 야간+비번 각각 식비·교통비</div></div><div className={"switch"+(r.nightAs2?' on':'')} onClick={()=>setR({nightAs2:!r.nightAs2})}><i/></div></div></div>
   </div>;
@@ -299,7 +345,7 @@ function SettingsView({state,setState}){
   if(page===null){
     const menu=[['프로필','👤','소집일·복무지'],['급여','💰','식비·교통비'],['휴가','🔖','연가·병가·추가 휴가'],['군적금','🏦','적금 계산'],['훈련소·연수','🎖️','훈련소·보은연수 기간'],['복무율','📊','실시간·소수점'],['백업·복구','💾','내보내기/불러오기·초기화']];
     return <div className="screen"><h1 className="title">설정</h1>{menu.map(([k,ic,sub])=><div key={k} className="menu-item" onClick={()=>setPage(k)}><div className="menu-ic">{ic}</div><div style={{flex:1}}><b>{k}</b><div className="note">{sub}</div></div><span className="chev">›</span></div>)}
-      <div className="note" style={{marginTop:6,padding:'0 4px'}}>v1.1 · 지하철공익 월급계산기</div></div>;
+      <div className="note" style={{marginTop:6,padding:'0 4px'}}>v1.3 · 지하철공익 월급계산기</div></div>;
   }
   const Top=({t})=><div className="topbar"><span className="back" onClick={()=>setPage(null)}>‹</span><h2>{t}</h2></div>;
   if(page==='프로필')return <div className="screen"><Top t="프로필"/><div className="card"><Field lab="복무지명"><input value={p.place} onChange={e=>setP({place:e.target.value})}/></Field><Field lab="소집일"><input type="date" value={p.enlist} onChange={e=>setP({enlist:e.target.value,discharge:computeDischarge(e.target.value)})}/></Field><Field lab="소집해제일" last><input type="date" value={p.discharge} onChange={e=>setP({discharge:e.target.value})}/></Field><div className="note" style={{marginTop:6}}>소집일을 바꾸면 복무기간(1년 9개월) 기준으로 소집해제일이 자동 조정됨. 연장 등으로 다르면 소집해제일만 따로 수정 가능.</div></div></div>;
@@ -310,9 +356,13 @@ function SettingsView({state,setState}){
   if(page==='훈련소·연수')return <div className="screen"><Top t="훈련소·연수"/><div className="card"><div className="sec-lab">식비·교통비 미지급, 봉급 정상</div><div className="row" style={{gap:8,marginBottom:14}}><Field lab="훈련 입소"><input type="date" value={p.trainStart} onChange={e=>setP({trainStart:e.target.value})}/></Field><Field lab="훈련 퇴소"><input type="date" value={p.trainEnd} onChange={e=>setP({trainEnd:e.target.value})}/></Field></div><div className="row" style={{gap:8}}><Field lab="보은연수 시작"><input type="date" value={p.boeunStart} onChange={e=>setP({boeunStart:e.target.value})}/></Field><Field lab="보은연수 종료"><input type="date" value={p.boeunEnd} onChange={e=>setP({boeunEnd:e.target.value})}/></Field></div></div></div>;
   if(page==='복무율'){const s=state.settings,setS=x=>setState({...state,settings:{...s,...x}});return <div className="screen"><Top t="복무율"/><div className="card"><div className="row" style={{justifyContent:'space-between',marginBottom:16}}><div><b>실시간 갱신</b><div className="note">현재 시각 기준 실시간 상승</div></div><div className={"switch"+(s.pctRealtime?' on':'')} onClick={()=>setS({pctRealtime:!s.pctRealtime})}><i/></div></div><Field lab="소수점 자리수" last><select value={s.pctDecimals} onChange={e=>setS({pctDecimals:Number(e.target.value)})}>{[1,2,3,4,5,6,7].map(n=><option key={n} value={n}>{n}번째</option>)}</select></Field></div></div>;}
   if(page==='백업·복구'){
-    const exportJSON=()=>{const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`공익교대_백업_${todayStr()}.json`;a.click();};
-    const importJSON=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{setState(mergeState(JSON.parse(r.result)));alert('복구 완료');}catch(err){alert('파일을 읽을 수 없음');}};r.readAsText(f);};
-    return <div className="screen"><Top t="백업·복구"/><div className="card"><div className="row" style={{gap:8}}><button className="btn btn-ghost btn-sm" onClick={exportJSON}>📤 내보내기</button><label className="btn btn-ghost btn-sm" style={{textAlign:'center'}}>📥 불러오기<input type="file" accept="application/json" style={{display:'none'}} onChange={importJSON}/></label></div><button className="btn btn-ghost btn-sm" style={{marginTop:12}} onClick={()=>{if(confirm('데이터를 초기값으로 되돌릴까요?')){try{localStorage.removeItem(KEY);}catch(e){}location.reload();}}}>데이터 초기화</button></div></div>;
+    const exportJSON=()=>{const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`야내려_백업_${todayStr()}.json`;a.click();};
+    const importJSON=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{setState(mergeState(JSON.parse(r.result)));alert('복구 완료');}catch(err){alert('파일을 읽을 수 없음');}};r.readAsText(f);e.target.value='';};
+    const importGongik=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const res=parseGongik(JSON.parse(r.result));if(!res){alert('공익인간 백업 형식이 아닙니다. (다른 종류의 파일이거나 형식이 안 맞음)');return;}const {ov,memos,boeun,train,imported,skipped}=res;const np={...state.profile};if(boeun){np.boeunStart=boeun.start;np.boeunEnd=boeun.end;}if(train){np.trainStart=train.start;np.trainEnd=train.end;}setState({...state,profile:np,overrides:{...state.overrides,...ov},memos:{...state.memos,...memos}});alert(`공익인간에서 ${imported}건 불러옴.`+(boeun?`\n보은연수 기간(${boeun.start}~${boeun.end}) 설정에 자동 반영됨.`:'')+(skipped.length?`\n매핑 안 됨: ${skipped.join(', ')}`:'')+`\n여러 날짜짜리는 연속 입력되니 근무표와 대조해 조정하세요. 특휴 등은 설정→휴가에서 받은 일수를 입력해야 잔여가 맞습니다.`);}catch(err){alert('공익인간 백업 파일이 아니거나 읽을 수 없습니다.');}};r.readAsText(f);e.target.value='';};
+    return <div className="screen"><Top t="백업·복구"/>
+      <div className="card"><div className="sec-lab">이 앱 백업</div><div className="row" style={{gap:8}}><button className="btn btn-ghost btn-sm" onClick={exportJSON}>📤 내보내기</button><label className="btn btn-ghost btn-sm" style={{textAlign:'center',cursor:'pointer'}}>📥 불러오기<input type="file" accept="application/json" style={{display:'none'}} onChange={importJSON}/></label></div></div>
+      <div className="card"><div className="sec-lab">공익인간 앱에서 이적</div><label className="btn btn-sm" style={{textAlign:'center',cursor:'pointer',display:'block'}}>공익인간 백업 파일 불러오기<input type="file" accept="application/json" style={{display:'none'}} onChange={importGongik}/></label><div className="note" style={{marginTop:10}}>공익인간 앱에서 백업한 JSON 파일을 선택하면 연가·병가·특휴 등이 자동 입력됩니다. (기존 입력에 추가됨)</div></div>
+      <div className="card"><button className="btn btn-ghost btn-sm" onClick={()=>{if(confirm('데이터를 초기값으로 되돌릴까요?')){try{localStorage.removeItem(KEY);}catch(e){}location.reload();}}}>데이터 초기화</button></div></div>;
   }
   return null;
 }
